@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>My Plans — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1124; --bg2:#141a33; --surface:#171d36; --card:#1b2244;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --ink:#E9EBFB; --muted:#969DC4; --faint:#6B72A0;
+  --amber:#FFB454; --mint:#46E0A8; --coral:#FF6B81;
+  --peri:#8FA0FF; --violet:#C792EA; --sky:#7BD0FF;
+  --disp:'Space Grotesk',sans-serif; --body:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; font-family:var(--body); color:var(--ink);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(255,180,84,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(143,160,255,.10), transparent 55%),
+    linear-gradient(180deg,var(--bg),var(--bg2));
+  background-attachment:fixed; min-height:100vh; line-height:1.5;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='760' height='760'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.025'%3E%3Cpath d='M-50 380 C150 300 250 460 420 380 S700 300 850 400'/%3E%3Cpath d='M-50 430 C150 350 250 510 420 430 S700 350 850 450'/%3E%3Cpath d='M-50 480 C150 400 250 560 420 480 S700 400 850 500'/%3E%3Cpath d='M-50 330 C150 250 250 410 420 330 S700 250 850 350'/%3E%3Cpath d='M-50 280 C150 200 250 360 420 280 S700 200 850 300'/%3E%3Cpath d='M-50 230 C150 150 250 310 420 230 S700 150 850 250'/%3E%3C/g%3E%3C/svg%3E");
+}
+.wrap{position:relative; z-index:1; max-width:1060px; margin:0 auto; padding:36px 20px 80px}
+
+/* hero */
+.hero{margin-bottom:36px}
+.eyebrow{font-family:var(--mono); font-size:11.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--amber); margin-bottom:10px}
+h1{font-family:var(--disp); font-weight:700; font-size:42px; line-height:1.02; margin:0 0 10px; letter-spacing:-.02em}
+h1 .em{background:linear-gradient(90deg,var(--peri),var(--mint)); -webkit-background-clip:text; background-clip:text; color:transparent}
+.hero-sub{color:var(--muted); font-size:15px; max-width:52ch}
+.hero-date{font-family:var(--mono); font-size:11.5px; color:var(--faint); margin-top:10px}
+
+/* summary stats */
+.summary{display:flex; gap:12px; flex-wrap:wrap; margin:28px 0}
+.sstat{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 20px; min-width:120px}
+.sstat .n{font-family:var(--disp); font-weight:700; font-size:28px}
+.sstat .l{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-top:2px}
+.sstat.active-s .n{color:var(--mint)}
+.sstat.done-s .n{color:var(--peri)}
+
+/* section heading */
+.section-label{font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+.section-label::after{content:""; flex:1; height:1px; background:var(--line)}
+
+/* grid */
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px}
+
+/* plan card */
+.pcard{
+  position:relative; border:1px solid var(--line); border-radius:20px; overflow:hidden;
+  background:linear-gradient(160deg,rgba(27,34,68,.75),rgba(20,26,51,.6));
+  backdrop-filter:blur(6px); display:flex; flex-direction:column;
+  transition:border-color .18s, box-shadow .18s; text-decoration:none; color:inherit;
+}
+.pcard:hover{border-color:var(--line2); box-shadow:0 8px 40px -12px rgba(0,0,0,.5)}
+.pcard-accent{height:3px; width:100%}
+.pcard-body{padding:20px 22px; flex:1; display:flex; flex-direction:column; gap:0}
+.pcard-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:4px}
+.pcard-title{font-family:var(--disp); font-weight:700; font-size:20px; line-height:1.15; margin:0}
+.pcard-badge{font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; padding:3px 9px; border-radius:999px; flex-shrink:0; margin-top:3px}
+.badge-active{background:rgba(70,224,168,.15); color:var(--mint); border:1px solid rgba(70,224,168,.25)}
+.badge-upcoming{background:rgba(143,160,255,.12); color:var(--peri); border:1px solid rgba(143,160,255,.2)}
+.badge-completed{background:rgba(255,255,255,.06); color:var(--muted); border:1px solid var(--line)}
+.pcard-subtitle{font-family:var(--mono); font-size:11.5px; color:var(--faint); margin-bottom:10px}
+.pcard-desc{font-size:13.5px; color:var(--muted); flex:1; margin-bottom:16px; line-height:1.55}
+
+/* progress */
+.prog-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
+.prog-label{font-family:var(--mono); font-size:11px; color:var(--faint)}
+.prog-val{font-family:var(--mono); font-size:11px; font-weight:600}
+.prog-track{height:6px; border-radius:99px; background:rgba(255,255,255,.07); overflow:hidden; margin-bottom:16px}
+.prog-fill{height:100%; border-radius:99px; transition:width .4s ease}
+
+/* tags */
+.tags{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px}
+.tag{font-family:var(--mono); font-size:10.5px; color:var(--faint); border:1px solid var(--line); border-radius:999px; padding:4px 9px; background:rgba(255,255,255,.02)}
+
+/* date range */
+.pcard-dates{font-family:var(--mono); font-size:11px; color:var(--faint); margin-bottom:16px}
+
+/* open button */
+.open-btn{
+  font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:10px 0; border-radius:10px; border:1px solid var(--line2);
+  background:rgba(255,255,255,.03); color:var(--muted); text-decoration:none;
+  transition:.15s; cursor:pointer;
+}
+.open-btn:hover{color:var(--ink); background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.2)}
+.open-btn svg{transition:.15s; transform:translateX(0)}
+.open-btn:hover svg{transform:translateX(3px)}
+
+/* add card */
+.add-card{
+  border:1px dashed var(--line); border-radius:20px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:10px; padding:40px 24px; color:var(--faint);
+  font-family:var(--mono); font-size:12px; text-align:center; min-height:220px;
+}
+.add-card .plus{font-size:28px; opacity:.4}
+
+/* footer */
+.foot{margin-top:48px; padding-top:18px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px}
+.foot-note{font-size:12px; color:var(--faint)}
+
+@media(max-width:620px){
+  h1{font-size:32px} .grid{grid-template-columns:1fr} .summary{gap:8px}
+  .sstat{flex:1; min-width:100px}
+}
+:focus-visible{outline:2px solid var(--amber); outline-offset:2px; border-radius:6px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">Personal Command Center</div>
+    <h1>My <span class="em">Plans</span></h1>
+    <p class="hero-sub">All your structured goals in one place. Click any plan to open it and track progress.</p>
+    <div class="hero-date" id="heroDate"></div>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="section-label">Active &amp; Upcoming</div>
+  <div class="grid" id="grid"></div>
+
+</div>
+
+<script>
+/* ── Plan registry ─────────────────────────────────────────────────────────
+   Add a new plan by appending an object here.
+   Fields:
+     id        – must match the localStorage key used in the plan HTML
+     title     – display name
+     subtitle  – one-liner (shown in monospace below title)
+     desc      – short description for the card
+     file      – relative path to the plan HTML file
+     start     – ISO date string "YYYY-MM-DD"
+     end       – ISO date string "YYYY-MM-DD"
+     total     – total number of checkable items (for progress %)
+     accent    – CSS gradient string for the top accent bar
+     tags      – array of short label strings
+     status    – "active" | "upcoming" | "completed"
+─────────────────────────────────────────────────────────────────────────── */
+const PLANS = [
+  {
+    id:       "nc150:v1",
+    title:    "The Ascent",
+    subtitle: "NeetCode 150 · Interview Prep",
+    desc:     "A date-by-date climb from fundamentals to a big-tech offer. One problem on weekdays, a push on weekends, a review every Sunday.",
+    file:     "neetcode150-plan.html",
+    start:    "2026-06-22",
+    end:      "2026-10-10",
+    total:    150,
+    accent:   "linear-gradient(90deg,#FFB454,#46E0A8)",
+    tags:     ["DSA", "Interview Prep", "16 weeks", "150 problems"],
+    status:   "active",
+  },
+];
+
+/* ── Progress from localStorage ──────────────────────────────────────────── */
+function readProgress(plan) {
+  try {
+    const raw = localStorage.getItem(plan.id);
+    if (!raw) return { done: 0, total: plan.total, pct: 0 };
+    const state = JSON.parse(raw);
+    const done = Object.values(state.done || {}).filter(Boolean).length;
+    const pct = Math.round(done / plan.total * 100);
+    return { done, total: plan.total, pct };
+  } catch(e) {
+    return { done: 0, total: plan.total, pct: 0 };
+  }
+}
+
+/* ── Date helpers ─────────────────────────────────────────────────────────── */
+function fmtDate(iso) {
+  const d = new Date(iso + "T00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function resolveStatus(plan) {
+  const t = todayISO();
+  if (plan.status === "completed") return "completed";
+  if (plan.start > t) return "upcoming";
+  if (plan.end < t) return "completed";
+  return "active";
+}
+
+/* ── Accent fill color per accent gradient ──────────────────────────────── */
+function accentFill(plan, pct) {
+  return plan.accent;
+}
+
+/* ── Render ─────────────────────────────────────────────────────────────── */
+function render() {
+  // today label
+  const today = new Date();
+  document.getElementById("heroDate").textContent =
+    today.toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+
+  const allProgress = PLANS.map(p => readProgress(p));
+
+  // summary stats
+  const active    = PLANS.filter(p => resolveStatus(p) === "active").length;
+  const completed = PLANS.filter(p => resolveStatus(p) === "completed").length;
+  const upcoming  = PLANS.filter(p => resolveStatus(p) === "upcoming").length;
+  const totalDone = allProgress.reduce((s, p) => s + p.done, 0);
+
+  document.getElementById("summary").innerHTML = `
+    <div class="sstat active-s"><div class="n">${active}</div><div class="l">Active</div></div>
+    <div class="sstat"><div class="n" style="color:var(--amber)">${upcoming}</div><div class="l">Upcoming</div></div>
+    <div class="sstat done-s"><div class="n">${completed}</div><div class="l">Completed</div></div>
+    <div class="sstat"><div class="n" style="color:var(--sky)">${totalDone}</div><div class="l">Tasks Done</div></div>
+  `;
+
+  // cards
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  PLANS.forEach((plan, i) => {
+    const prog   = allProgress[i];
+    const status = resolveStatus(plan);
+    const badgeCls   = { active:"badge-active", upcoming:"badge-upcoming", completed:"badge-completed" }[status];
+    const badgeLabel = { active:"Active", upcoming:"Upcoming", completed:"Completed" }[status];
+    const fillColor  = prog.pct === 100 ? "var(--mint)" : "url(#ag" + i + ")";
+
+    const card = document.createElement("a");
+    card.href  = plan.file;
+    card.className = "pcard";
+    card.setAttribute("aria-label", "Open plan: " + plan.title);
+
+    card.innerHTML = `
+      <div class="pcard-accent" style="background:${plan.accent}"></div>
+      <div class="pcard-body">
+        <div class="pcard-top">
+          <div class="pcard-title">${plan.title}</div>
+          <span class="pcard-badge ${badgeCls}">${badgeLabel}</span>
+        </div>
+        <div class="pcard-subtitle">${plan.subtitle}</div>
+        <p class="pcard-desc">${plan.desc}</p>
+        <div class="prog-row">
+          <span class="prog-label">Progress</span>
+          <span class="prog-val" style="color:${prog.pct === 100 ? 'var(--mint)' : 'var(--amber)'}">${prog.done} / ${prog.total} &nbsp;·&nbsp; ${prog.pct}%</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" style="width:${prog.pct}%; background:${plan.accent}"></div>
+        </div>
+        <div class="tags">${plan.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
+        <div class="pcard-dates">${fmtDate(plan.start)} → ${fmtDate(plan.end)}</div>
+        <span class="open-btn">
+          Open Plan
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 7h9M7.5 3l4 4-4 4"/>
+          </svg>
+        </span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // placeholder "add plan" slot
+  const add = document.createElement("div");
+  add.className = "add-card";
+  add.innerHTML = `<div class="plus">+</div><div>Add a new plan<br><span style="opacity:.55">Drop an HTML file here and add an entry to the PLANS array in index.html</span></div>`;
+  grid.appendChild(add);
+}
+
+render();
+</script>
+</body>
+</html>
