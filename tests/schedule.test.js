@@ -249,3 +249,16 @@ test("computeTimeline exposes the same finish projection as computeSchedule", ()
   assert.strictEqual(tl.slipped, sched.slipped);
   assert.strictEqual(tl.finishedEarly, sched.finishedEarly);
 });
+
+test("computeTimeline: when everything is done, future is empty and history holds it all", () => {
+  const s = S.flattenStream(fixtureDays());
+  const done = {}; s.forEach(it => { done[it.id] = true; });
+  const r = S.computeTimeline({
+    stream: s, done: done, at: {},
+    todayISO: "2026-07-15", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  assert.strictEqual(r.future.length, 0, "no remaining future days");
+  assert.ok(r.history.length > 0, "completed work preserved as history");
+  const ids = r.days.flatMap(d => d.tasks.map(t => t.id));
+  s.forEach(it => assert.ok(ids.includes(it.id), "every task still shown: " + it.id));
+});

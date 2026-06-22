@@ -329,7 +329,7 @@ function renderStats(){
   const solved=solvedCount(); const pct=Math.round(solved/150*100);
   const startD=new Date(meta.start+"T00:00"), today=new Date(todayISO+"T00:00");
   let daysIn = Math.floor((today-startD)/864e5)+1; daysIn=Math.max(0,Math.min(daysIn,meta.total_days));
-  const remainingDays=days.length;
+  const remainingDays=SCHED.future.length;
   const pace=Schedule.computePace({stream:STREAM, done:STATE.done, todayISO});
   const paceLabel = pace.status==="on-track" ? "On track"
     : (pace.delta>0?`+${pace.delta}`:`${pace.delta}`);
@@ -422,7 +422,7 @@ function updateWeekBars(){
 /* ---------- focus panel ---------- */
 function renderFocus(){
   const d=days[FOCUS];
-  if(!d){ document.getElementById("focus").innerHTML=`<div class="slogan" style="padding:18px 20px">🎉 All tasks complete — every problem solved. Nicely done.</div>`; return; }
+  if(!d || !SCHED.future.length){ document.getElementById("focus").innerHTML=`<div class="slogan" style="padding:18px 20px">🎉 All tasks complete — every problem solved. Nicely done.</div>`; return; }
   const finishNote = SCHED.slipped
     ? ` · ⚠ finish slips to ${Schedule.fmtFull(SCHED.projectedFinish)}`
     : (SCHED.finishedEarly ? ` · on pace to finish ${Schedule.fmtFull(SCHED.projectedFinish)}` : "");
