@@ -411,19 +411,19 @@ function updateWeekBars(){
 /* ---------- focus panel ---------- */
 function renderFocus(){
   const d=days[FOCUS];
-  if(!d){ document.getElementById(“focus”).innerHTML=`<div class=”slogan” style=”padding:18px 20px”>🎉 All tasks complete — every problem solved. Nicely done.</div>`; return; }
+  if(!d){ document.getElementById("focus").innerHTML=`<div class="slogan" style="padding:18px 20px">🎉 All tasks complete — every problem solved. Nicely done.</div>`; return; }
   const finishNote = SCHED.slipped
     ? ` · ⚠ finish slips to ${Schedule.fmtFull(SCHED.projectedFinish)}`
-    : (SCHED.finishedEarly ? ` · on pace to finish ${Schedule.fmtFull(SCHED.projectedFinish)}` : “”);
-  const label = d.date===todayISO ? “Today” : (d.date>todayISO?”Up next”:”Latest”);
-  document.getElementById(“focus”).innerHTML=`
-    <div class=”top”>
-      <div><div class=”when”>${label} · Week ${d.week} · ${d.phase}</div>
-      <div class=”date”>${d.full} · ${d.dow}</div></div>
-      <div style=”font-family:var(--mono);font-size:11px;color:var(--faint)”>~${d.est} min${finishNote}</div>
+    : (SCHED.finishedEarly ? ` · on pace to finish ${Schedule.fmtFull(SCHED.projectedFinish)}` : "");
+  const label = d.date===todayISO ? "Today" : (d.date>todayISO?"Up next":"Latest");
+  document.getElementById("focus").innerHTML=`
+    <div class="top">
+      <div><div class="when">${label} · Week ${d.week} · ${d.phase}</div>
+      <div class="date">${d.full} · ${d.dow}</div></div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--faint)">~${d.est} min${finishNote}</div>
     </div>
-    <div class=”slogan”>”${d.slogan}”</div>
-    <div class=”ftasks tasks”>${d.tasks.map(t=>taskHTML(t,d.dow)).join(“”)}</div>`;
+    <div class="slogan">“${d.slogan}”</div>
+    <div class="ftasks tasks">${d.tasks.map(t=>taskHTML(t,d.dow)).join("")}</div>`;
 }
 
 /* ---------- interactions ---------- */
@@ -458,7 +458,7 @@ document.addEventListener("click",e=>{ if(e.target.classList.contains("chip")){
 }});
 document.getElementById("search").addEventListener("input",applyFilter);
 
-function weekRangeOfFocus(){ const f=days[FOCUS]; return days.filter(d=>d.week===f.week).map(d=>d.date); }
+function weekRangeOfFocus(){ const f=days[FOCUS]; if(!f) return []; return days.filter(d=>d.week===f.week).map(d=>d.date); }
 function applyFilter(){
   const q=document.getElementById("search").value.trim().toLowerCase();
   const focusWeek=weekRangeOfFocus();
@@ -468,7 +468,7 @@ function applyFilter(){
     w.querySelectorAll(".day").forEach(day=>{
       const date=day.dataset.date;
       let dayMatch=true;
-      if(FILTER==="today") dayMatch=(date===days[FOCUS].date);
+      if(FILTER==="today") dayMatch=(!!days[FOCUS] && date===days[FOCUS].date);
       else if(FILTER==="week") dayMatch=focusWeek.includes(date);
       else if(FILTER==="upcoming") dayMatch=(date>=todayISO);
       // task-level visibility for done/flagged/search
@@ -502,7 +502,7 @@ document.getElementById("reset").addEventListener("click",()=>{
 function paint(){ renderClimb(); renderStats(); renderFocus(); renderPlan(); renderChips(); applyFilter(); }
 function init(skipScroll){
   paint();
-  if(!skipScroll){ const f=document.getElementById(days[FOCUS].id);
+  if(!skipScroll && days[FOCUS]){ const f=document.getElementById(days[FOCUS].id);
     if(f) setTimeout(()=>{ /* keep focus week open; no aggressive scroll */ },50); }
 }
 (async function(){ await load(); recompute(); init(false); })();
