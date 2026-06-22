@@ -375,7 +375,7 @@ function dayHTML(d){
   const dd=new Date(d.date+"T00:00");
   const pill=dd.toLocaleDateString("en-US",{month:"short",day:"numeric"});
   const doneMark=dayComplete(d)?`<span class="ddone">&#x2713; done</span>`:"";
-  const slogan=d.slogan?`<div class="dslogan">"${d.slogan}"</div>`:"";
+  const slogan=d.slogan?`<div class="dslogan">“${d.slogan}”</div>`:"";
   return `<div class="day ${isToday?'today':''} ${dayComplete(d)?'daydone':''}" id="${d.id}" data-date="${d.date}">
     <div class="dhead">
       <span class="dpill">${pill}</span>
@@ -432,7 +432,7 @@ function renderFocus(){
       <div class="date">${d.full} · ${d.dow}</div></div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--faint)">~${d.est} min${finishNote}</div>
     </div>
-    <div class="slogan">"${d.slogan}"</div>
+    <div class="slogan">“${d.slogan}”</div>
     <div class="ftasks tasks">${d.tasks.map(t=>taskHTML(t,d.dow)).join("")}</div>`;
 }
 
