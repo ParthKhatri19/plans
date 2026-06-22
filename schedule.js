@@ -126,6 +126,43 @@
     return { days: days, slipped: slipped, projectedFinish: projectedFinish, finishedEarly: finishedEarly };
   }
 
+  function computeTimeline(opts) {
+    var future = computeSchedule(opts);
+    var stream = opts.stream, done = opts.done || {}, at = opts.at || {},
+        todayISO = opts.todayISO, sloganByDate = opts.sloganByDate || {};
+
+    // group completed tasks by completion date (recorded date, else baseline date)
+    var byDate = {};
+    stream.forEach(function (it) {
+      if (!done[it.id]) return;
+      var d = at[it.id] || it.baselineDate;
+      (byDate[d] = byDate[d] || []).push(it);   // stream order preserved
+    });
+
+    // merge work completed today into today's adaptive card, completed-first
+    var futureToday = null;
+    future.days.forEach(function (d) { if (d.date === todayISO) futureToday = d; });
+    if (futureToday && byDate[todayISO]) {
+      futureToday.tasks = byDate[todayISO].concat(futureToday.tasks);
+      futureToday.est = estOf(futureToday.tasks);
+      delete byDate[todayISO];
+    }
+
+    // build history days for the remaining completed dates
+    var history = Object.keys(byDate).sort().map(function (date) {
+      return makeDay(date, byDate[date], sloganByDate[date] || "");
+    });
+
+    return {
+      days: history.concat(future.days),
+      history: history,
+      future: future.days,
+      slipped: future.slipped,
+      projectedFinish: future.projectedFinish,
+      finishedEarly: future.finishedEarly
+    };
+  }
+
   return {
     EST: EST,
     addDaysISO: addDaysISO,
@@ -136,6 +173,7 @@
     _toTime: toTime,
     flattenStream: flattenStream,
     computePace: computePace,
-    computeSchedule: computeSchedule
+    computeSchedule: computeSchedule,
+    computeTimeline: computeTimeline
   };
 });
