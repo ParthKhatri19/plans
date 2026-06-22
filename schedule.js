@@ -55,6 +55,77 @@
     return { expected: expected, actual: actual, delta: delta, paceDays: paceDays, status: status };
   }
 
+  function estOf(tasks) {
+    var sum = 0;
+    tasks.forEach(function (t) {
+      var m = EST[t.diff];
+      if (m == null) m = t.kind === "mock" ? EST.Mock : (t.kind === "review" ? EST.Review : 30);
+      sum += m;
+    });
+    return sum;
+  }
+
+  function makeDay(date, tasks, slogan) {
+    return {
+      id: "d" + date, date: date, dow: isoDow(date), full: fmtFull(date),
+      week: tasks[0].week, phase: tasks[0].phase, est: estOf(tasks),
+      slogan: slogan || "", tasks: tasks
+    };
+  }
+
+  function computeSchedule(opts) {
+    var stream = opts.stream, done = opts.done || {}, todayISO = opts.todayISO,
+        finishISO = opts.finishISO,
+        weekdayCap = opts.weekdayCap || 1, weekendCap = opts.weekendCap || 4,
+        maxCap = opts.maxCap || 8, slogans = opts.slogans || [];
+
+    var remaining = stream.filter(function (it) { return !done[it.id]; });
+    var remProblems = remaining.filter(function (it) { return it.kind === "problem"; }).length;
+
+    // base slot count across today..finish
+    var cal = enumerateDays(todayISO, finishISO);
+    if (cal.length === 0) cal = [todayISO];
+    var baseSlots = 0;
+    cal.forEach(function (d) { baseSlots += isWeekend(d) ? weekendCap : weekdayCap; });
+
+    var wdCap = weekdayCap, weCap = weekendCap;
+    if (remProblems > baseSlots && baseSlots > 0) {
+      var scale = remProblems / baseSlots;
+      wdCap = Math.min(maxCap, Math.max(weekdayCap, Math.ceil(weekdayCap * scale)));
+      weCap = Math.min(maxCap, Math.max(weekendCap, Math.ceil(weekendCap * scale)));
+    }
+
+    var days = [], ptr = 0, date = todayISO, sloIdx = 0, slipped = false;
+    var sloMod = slogans.length || 1;
+    while (ptr < remaining.length) {
+      var cap = isWeekend(date) ? weCap : wdCap;
+      var dayTasks = [], probCount = 0, curWeek = null;
+      while (ptr < remaining.length) {
+        var it = remaining[ptr];
+        if (dayTasks.length > 0 && it.week !== curWeek) break;           // no week mixing
+        if (it.kind === "problem") {
+          if (probCount >= cap) break;
+          dayTasks.push(it); probCount++; curWeek = it.week; ptr++;
+        } else {
+          if (dayTasks.length === 0 || it.week === curWeek) {
+            dayTasks.push(it); if (curWeek === null) curWeek = it.week; ptr++;
+          } else break;
+        }
+      }
+      if (dayTasks.length > 0) {
+        days.push(makeDay(date, dayTasks, slogans[sloIdx % sloMod]));
+        sloIdx++;
+      }
+      if (ptr >= remaining.length) break;
+      date = addDaysISO(date, 1);
+      if (date > finishISO) slipped = true;
+    }
+
+    var projectedFinish = days.length ? days[days.length - 1].date : todayISO;
+    var finishedEarly = projectedFinish < finishISO;
+    return { days: days, slipped: slipped, projectedFinish: projectedFinish, finishedEarly: finishedEarly };
+  }
+
   return {
     EST: EST,
     addDaysISO: addDaysISO,
@@ -64,6 +135,7 @@
     fmtFull: fmtFull,
     _toTime: toTime,
     flattenStream: flattenStream,
-    computePace: computePace
+    computePace: computePace,
+    computeSchedule: computeSchedule
   };
 });

@@ -76,3 +76,79 @@ test("computePace is on-track when solved equals expected", () => {
   assert.strictEqual(pace.delta, 0);
   assert.strictEqual(pace.status, "on-track");
 });
+
+test("on-track: keeps baseline rhythm, one problem per weekday", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeSchedule({
+    stream: s, done: {}, todayISO: "2026-06-22", finishISO: "2026-07-31",
+    slogans: ["go"]
+  });
+  // 4 problems, plenty of days -> each weekday gets exactly 1 problem
+  const firstDay = r.days[0];
+  assert.strictEqual(firstDay.date, "2026-06-22");
+  assert.strictEqual(firstDay.tasks.filter(t => t.kind === "problem").length, 1);
+  // every computed day holds at most weekend cap (4) problems
+  r.days.forEach(d => assert.ok(d.tasks.filter(t => t.kind === "problem").length <= 4));
+});
+
+test("review rides along on the same day as its preceding problem's week", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeSchedule({
+    stream: s, done: {}, todayISO: "2026-06-22", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  // find the day containing r1; it must also be a week-1 day and contain p3 (its predecessor)
+  const revDay = r.days.find(d => d.tasks.some(t => t.id === "r1"));
+  assert.ok(revDay);
+  assert.strictEqual(revDay.week, 1);
+  assert.ok(revDay.tasks.some(t => t.id === "p3"));
+});
+
+test("a computed day never mixes two weeks", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeSchedule({
+    stream: s, done: {}, todayISO: "2026-06-22", finishISO: "2026-06-25", slogans: ["go"]
+  });
+  r.days.forEach(d => {
+    const weeks = new Set(d.tasks.map(t => t.week));
+    assert.strictEqual(weeks.size, 1);
+  });
+});
+
+test("behind: caps scale up so heavy backlog still fits before finish", () => {
+  // 10 problems all in week 1, only 3 days until finish -> must pack >1/day
+  const raw = [];
+  for (let i = 1; i <= 10; i++) {
+    raw.push({ date: "2026-06-2" + (i % 10), week: 1,
+      tasks: [{ id: "q" + i, kind: "problem", cat: "Arrays", diff: "Easy", title: "Q" + i, phase: "F" }] });
+  }
+  const s = S.flattenStream(raw);
+  const r = S.computeSchedule({
+    stream: s, done: {}, todayISO: "2026-06-22", finishISO: "2026-06-24", slogans: ["go"]
+  });
+  const totalProblems = r.days.reduce((n, d) => n + d.tasks.filter(t => t.kind === "problem").length, 0);
+  assert.strictEqual(totalProblems, 10);
+  // 3 calendar days for 10 problems -> at least one day carries >1
+  assert.ok(r.days.some(d => d.tasks.filter(t => t.kind === "problem").length > 1));
+  assert.strictEqual(r.slipped, false);
+});
+
+test("ahead: solved problems are excluded; only remaining are scheduled", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeSchedule({
+    stream: s, done: { p1: true, p2: true }, todayISO: "2026-06-24", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  const ids = r.days.flatMap(d => d.tasks.map(t => t.id));
+  assert.ok(!ids.includes("p1"));
+  assert.ok(!ids.includes("p2"));
+  assert.ok(ids.includes("p3"));
+  assert.ok(ids.includes("p4"));
+});
+
+test("est is derived from task difficulties", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeSchedule({
+    stream: s, done: {}, todayISO: "2026-06-22", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  const d0 = r.days[0]; // single Easy problem
+  assert.strictEqual(d0.est, S.EST.Easy);
+});
