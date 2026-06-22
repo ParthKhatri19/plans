@@ -28,6 +28,33 @@
     return toDate(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   }
 
+  function flattenStream(rawDays) {
+    var out = [];
+    rawDays.forEach(function (d) {
+      d.tasks.forEach(function (t) {
+        out.push({
+          id: t.id, kind: t.kind, cat: t.cat, diff: t.diff, title: t.title,
+          phase: t.phase, week: d.week, baselineDate: d.date
+        });
+      });
+    });
+    return out;
+  }
+
+  function computePace(opts) {
+    var stream = opts.stream, done = opts.done || {}, todayISO = opts.todayISO;
+    var problems = stream.filter(function (it) { return it.kind === "problem"; });
+    var expected = problems.filter(function (it) { return it.baselineDate <= todayISO; }).length;
+    var actual = problems.filter(function (it) { return done[it.id]; }).length;
+    var delta = actual - expected;
+    var refDate;
+    if (actual === 0) refDate = problems.length ? problems[0].baselineDate : todayISO;
+    else refDate = problems[Math.min(actual, problems.length) - 1].baselineDate;
+    var paceDays = Math.round((toTime(refDate) - toTime(todayISO)) / 864e5);
+    var status = delta > 0 ? "ahead" : (delta < 0 ? "behind" : "on-track");
+    return { expected: expected, actual: actual, delta: delta, paceDays: paceDays, status: status };
+  }
+
   return {
     EST: EST,
     addDaysISO: addDaysISO,
@@ -35,6 +62,8 @@
     isoDow: isoDow,
     isWeekend: isWeekend,
     fmtFull: fmtFull,
-    _toTime: toTime
+    _toTime: toTime,
+    flattenStream: flattenStream,
+    computePace: computePace
   };
 });
