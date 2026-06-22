@@ -219,11 +219,11 @@ const DATA = {"meta": {"start": "2026-06-22", "end": "2026-10-10", "total_proble
 /* ---------- storage (persists across sessions; safe fallback) ---------- */
 const KEY="nc150:v1";
 const hasStore = (typeof window!=="undefined" && window.storage && typeof window.storage.get==="function");
-let STATE={done:{},flag:{}};
+let STATE={done:{},flag:{},at:{}};
 async function load(){
   try{
-    if(hasStore){ const r=await window.storage.get(KEY); if(r&&r.value){ const p=JSON.parse(r.value); STATE.done=p.done||{}; STATE.flag=p.flag||{}; return; } }
-    const ls=localStorage.getItem(KEY); if(ls){ const p=JSON.parse(ls); STATE.done=p.done||{}; STATE.flag=p.flag||{}; }
+    if(hasStore){ const r=await window.storage.get(KEY); if(r&&r.value){ const p=JSON.parse(r.value); STATE.done=p.done||{}; STATE.flag=p.flag||{}; STATE.at=p.at||{}; return; } }
+    const ls=localStorage.getItem(KEY); if(ls){ const p=JSON.parse(ls); STATE.done=p.done||{}; STATE.flag=p.flag||{}; STATE.at=p.at||{}; }
   }catch(e){}
 }
 let saveT=null;
@@ -428,7 +428,8 @@ function renderFocus(){
 
 /* ---------- interactions ---------- */
 function setDone(id,val){
-  if(val) STATE.done[id]=true; else delete STATE.done[id];
+  if(val){ STATE.done[id]=true; STATE.at[id]=todayISO; }
+  else { delete STATE.done[id]; delete STATE.at[id]; }
   save(); recompute(); paint();
 }
 function setFlag(id,val){
@@ -494,7 +495,7 @@ function applyFilter(){
 /* ---------- reset ---------- */
 document.getElementById("reset").addEventListener("click",()=>{
   if(confirm("Reset every checkbox and flag? This can't be undone.")){
-    STATE={done:{},flag:{}}; save(); init(true);
+    STATE={done:{},flag:{},at:{}}; save(); init(true);
   }
 });
 
