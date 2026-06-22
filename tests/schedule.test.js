@@ -152,3 +152,40 @@ test("est is derived from task difficulties", () => {
   const d0 = r.days[0]; // single Easy problem
   assert.strictEqual(d0.est, S.EST.Easy);
 });
+
+test("slip: backlog beyond max capacity pushes finish past the target date", () => {
+  // 30 problems, 1 day window, maxCap 8 -> cannot fit; date must slip, all still scheduled
+  const raw = [];
+  for (let i = 1; i <= 30; i++) {
+    raw.push({ date: "2026-06-22", week: 1,
+      tasks: [{ id: "z" + i, kind: "problem", cat: "Arrays", diff: "Easy", title: "Z" + i, phase: "F" }] });
+  }
+  const s = S.flattenStream(raw);
+  const r = S.computeSchedule({
+    stream: s, done: {}, todayISO: "2026-06-22", finishISO: "2026-06-22", maxCap: 8, slogans: ["go"]
+  });
+  const total = r.days.reduce((n, d) => n + d.tasks.length, 0);
+  assert.strictEqual(total, 30);                  // nothing dropped
+  assert.strictEqual(r.slipped, true);
+  assert.ok(r.projectedFinish > "2026-06-22");     // finish slipped later
+  r.days.forEach(d => assert.ok(d.tasks.length <= 8)); // honored the cap
+});
+
+test("finished-early: ahead work means projected finish is before the target", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeSchedule({
+    stream: s, done: {}, todayISO: "2026-06-22", finishISO: "2026-12-31", slogans: ["go"]
+  });
+  assert.strictEqual(r.finishedEarly, true);
+  assert.ok(r.projectedFinish < "2026-12-31");
+});
+
+test("empty: everything done yields no days and not slipped", () => {
+  const s = S.flattenStream(fixtureDays());
+  const allDone = {}; s.forEach(it => { allDone[it.id] = true; });
+  const r = S.computeSchedule({
+    stream: s, done: allDone, todayISO: "2026-06-22", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  assert.strictEqual(r.days.length, 0);
+  assert.strictEqual(r.slipped, false);
+});
