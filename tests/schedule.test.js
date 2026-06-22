@@ -189,3 +189,63 @@ test("empty: everything done yields no days and not slipped", () => {
   assert.strictEqual(r.days.length, 0);
   assert.strictEqual(r.slipped, false);
 });
+
+test("computeTimeline places a completed problem on its recorded completion date", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeTimeline({
+    stream: s, done: { p1: true }, at: { p1: "2026-06-19" },
+    todayISO: "2026-06-25", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  const h = r.history.find(d => d.date === "2026-06-19");
+  assert.ok(h, "history day exists on the recorded completion date");
+  assert.ok(h.tasks.some(t => t.id === "p1"));
+});
+
+test("computeTimeline falls back to the baseline date when no completion date is recorded", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeTimeline({
+    stream: s, done: { p1: true }, at: {},
+    todayISO: "2026-06-25", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  const h = r.history.find(d => d.date === "2026-06-22"); // p1's baseline date
+  assert.ok(h, "history day exists on the baseline date");
+  assert.ok(h.tasks.some(t => t.id === "p1"));
+});
+
+test("computeTimeline merges work completed today into today's card, completed first", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeTimeline({
+    stream: s, done: { p1: true }, at: { p1: "2026-06-22" },
+    todayISO: "2026-06-22", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  assert.strictEqual(r.history.find(d => d.date === "2026-06-22"), undefined,
+    "no standalone history day for today");
+  const today = r.days.find(d => d.date === "2026-06-22");
+  assert.ok(today);
+  const ids = today.tasks.map(t => t.id);
+  assert.ok(ids.includes("p1"), "completed-today task present");
+  assert.ok(ids.includes("p2"), "remaining-today task present");
+  assert.strictEqual(ids[0], "p1", "completed task listed first");
+});
+
+test("computeTimeline drops a task from history when it is no longer done", () => {
+  const s = S.flattenStream(fixtureDays());
+  const r = S.computeTimeline({
+    stream: s, done: {}, at: {},
+    todayISO: "2026-06-22", finishISO: "2026-07-31", slogans: ["go"]
+  });
+  assert.strictEqual(r.history.length, 0);
+  const futureIds = r.future.flatMap(d => d.tasks.map(t => t.id));
+  assert.ok(futureIds.includes("p1"), "uncompleted task returns to the adaptive future");
+});
+
+test("computeTimeline exposes the same finish projection as computeSchedule", () => {
+  const s = S.flattenStream(fixtureDays());
+  const opts = { stream: s, done: { p1: true }, todayISO: "2026-06-22",
+    finishISO: "2026-07-31", slogans: ["go"] };
+  const sched = S.computeSchedule(opts);
+  const tl = S.computeTimeline(Object.assign({ at: {} }, opts));
+  assert.strictEqual(tl.projectedFinish, sched.projectedFinish);
+  assert.strictEqual(tl.slipped, sched.slipped);
+  assert.strictEqual(tl.finishedEarly, sched.finishedEarly);
+});
