@@ -53,11 +53,14 @@ h1 .em{background:linear-gradient(90deg,var(--amber),var(--mint)); -webkit-backg
 .climb .pct .big{font-size:34px; line-height:1} .climb .pct .lab{font-size:11px; color:var(--muted); font-family:var(--mono); letter-spacing:.12em; text-transform:uppercase}
 
 /* ---------- stats ---------- */
-.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 6px}
+.stats{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:18px 0 6px}
 .stat{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px}
 .stat .n{font-family:var(--disp); font-weight:700; font-size:26px}
 .stat .l{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-top:2px}
 .stat.solved .n{color:var(--mint)} .stat.streak .n{color:var(--amber)}
+.stat.pace.ahead .n{color:var(--mint)}
+.stat.pace.behind .n{color:var(--coral)}
+.stat.pace.on-track .n{color:var(--peri)}
 
 /* ---------- focus / today ---------- */
 .focus{margin-top:22px; border:1px solid var(--line2); border-radius:18px; overflow:hidden;
@@ -322,11 +325,18 @@ function renderStats(){
   const startD=new Date(meta.start+"T00:00"), today=new Date(todayISO+"T00:00");
   let daysIn = Math.floor((today-startD)/864e5)+1; daysIn=Math.max(0,Math.min(daysIn,meta.total_days));
   const remainingDays=days.length;
+  const pace=Schedule.computePace({stream:STREAM, done:STATE.done, todayISO});
+  const paceLabel = pace.status==="on-track" ? "On track"
+    : (pace.delta>0?`+${pace.delta}`:`${pace.delta}`);
+  const paceSub = pace.status==="ahead" ? `Ahead · ${Math.abs(pace.paceDays)}d buffer`
+    : pace.status==="behind" ? `Behind · ${Math.abs(pace.delta)} to catch up`
+    : "Right on pace";
   document.getElementById("stats").innerHTML=`
     <div class="stat solved"><div class="n">${solved}<span style="font-size:15px;color:var(--faint)">/150</span></div><div class="l">Problems solved</div></div>
     <div class="stat"><div class="n">${pct}%</div><div class="l">Course complete</div></div>
     <div class="stat streak"><div class="n">${streak()}</div><div class="l">Day streak 🔥</div></div>
-    <div class="stat"><div class="n">${remainingDays}</div><div class="l">Study days left</div></div>`;
+    <div class="stat"><div class="n">${remainingDays}</div><div class="l">Study days left</div></div>
+    <div class="stat pace ${pace.status}"><div class="n">${paceLabel}</div><div class="l">${paceSub}</div></div>`;
   document.getElementById("facts").innerHTML=`
     <span class="fact"><b>${meta.total_weeks}</b> weeks</span>
     <span class="fact"><b>${meta.total_days}</b> study days</span>
@@ -401,15 +411,19 @@ function updateWeekBars(){
 /* ---------- focus panel ---------- */
 function renderFocus(){
   const d=days[FOCUS];
-  const label = d.date===todayISO ? "Today" : (d.date>todayISO?"Up next":"Latest");
-  document.getElementById("focus").innerHTML=`
-    <div class="top">
-      <div><div class="when">${label} · Week ${d.week} · ${d.phase}</div>
-      <div class="date">${d.full} · ${d.dow}</div></div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--faint)">~${d.est} min</div>
+  if(!d){ document.getElementById(“focus”).innerHTML=`<div class=”slogan” style=”padding:18px 20px”>🎉 All tasks complete — every problem solved. Nicely done.</div>`; return; }
+  const finishNote = SCHED.slipped
+    ? ` · ⚠ finish slips to ${Schedule.fmtFull(SCHED.projectedFinish)}`
+    : (SCHED.finishedEarly ? ` · on pace to finish ${Schedule.fmtFull(SCHED.projectedFinish)}` : “”);
+  const label = d.date===todayISO ? “Today” : (d.date>todayISO?”Up next”:”Latest”);
+  document.getElementById(“focus”).innerHTML=`
+    <div class=”top”>
+      <div><div class=”when”>${label} · Week ${d.week} · ${d.phase}</div>
+      <div class=”date”>${d.full} · ${d.dow}</div></div>
+      <div style=”font-family:var(--mono);font-size:11px;color:var(--faint)”>~${d.est} min${finishNote}</div>
     </div>
-    <div class="slogan">“${d.slogan}”</div>
-    <div class="ftasks tasks">${d.tasks.map(t=>taskHTML(t,d.dow)).join("")}</div>`;
+    <div class=”slogan”>”${d.slogan}”</div>
+    <div class=”ftasks tasks”>${d.tasks.map(t=>taskHTML(t,d.dow)).join(“”)}</div>`;
 }
 
 /* ---------- interactions ---------- */
