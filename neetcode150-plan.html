@@ -341,7 +341,8 @@ function renderStats(){
     <div class="stat"><div class="n">${pct}%</div><div class="l">Course complete</div></div>
     <div class="stat streak"><div class="n">${streak()}</div><div class="l">Day streak 🔥</div></div>
     <div class="stat"><div class="n">${remainingDays}</div><div class="l">Study days left</div></div>
-    <div class="stat pace ${pace.status}"><div class="n">${paceLabel}</div><div class="l">${paceSub}</div></div>`;
+    <div class="stat pace ${pace.status}"><div class="n">${paceLabel}</div><div class="l">${paceSub}</div></div>
+    <div class="stat"><div class="n" style="font-size:17px">${Schedule.fmtFull(SCHED.projectedFinish)}</div><div class="l">Est. finish</div></div>`;
   document.getElementById("facts").innerHTML=`
     <span class="fact"><b>${meta.total_weeks}</b> weeks</span>
     <span class="fact"><b>${meta.total_days}</b> study days</span>
