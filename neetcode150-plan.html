@@ -109,6 +109,8 @@ h1 .em{background:linear-gradient(90deg,var(--amber),var(--mint)); -webkit-backg
 .day .dpill{font-family:var(--mono); font-size:11px; font-weight:600; color:var(--ink);
   border:1px solid var(--line2); border-radius:8px; padding:3px 8px; background:rgba(255,255,255,.03)}
 .day.today .dpill{background:var(--amber); color:#1a1300; border-color:var(--amber)}
+.ddone{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--mint);text-transform:uppercase}
+.daydone .dpill{color:var(--mint)}
 .day .ddow{font-family:var(--mono); font-size:11px; color:var(--faint); text-transform:uppercase; letter-spacing:.1em}
 .day .dest{margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--faint)}
 .day .dslogan{font-style:italic; color:var(--peri); font-size:13px; margin:6px 0 8px}
@@ -242,11 +244,13 @@ const meta=DATA.meta;
 const BASELINE=DATA.days;                       // original calendar: drives streak + pace "expected"
 const STREAM=Schedule.flattenStream(BASELINE);
 const SLOGANS=BASELINE.map(d=>d.slogan);
+const SLOGAN_BY_DATE={}; BASELINE.forEach(d=>{ SLOGAN_BY_DATE[d.date]=d.slogan; });
 const allProblems=[]; STREAM.forEach(t=>{ if(t.kind==="problem") allProblems.push(t.id); });
 const isProblem=id=>id&&id[0]==="p";
 
-let SCHED=Schedule.computeSchedule({
-  stream:STREAM, done:STATE.done, todayISO, finishISO:meta.end,
+let SCHED=Schedule.computeTimeline({
+  stream:STREAM, done:STATE.done, at:STATE.at, sloganByDate:SLOGAN_BY_DATE,
+  todayISO, finishISO:meta.end,
   weekdayCap:1, weekendCap:4, maxCap:8, slogans:SLOGANS
 });
 let days=SCHED.days;
@@ -263,8 +267,9 @@ function focusIndex(){
 let FOCUS=focusIndex();
 
 function recompute(){
-  SCHED=Schedule.computeSchedule({
-    stream:STREAM, done:STATE.done, todayISO, finishISO:meta.end,
+  SCHED=Schedule.computeTimeline({
+    stream:STREAM, done:STATE.done, at:STATE.at, sloganByDate:SLOGAN_BY_DATE,
+    todayISO, finishISO:meta.end,
     weekdayCap:1, weekendCap:4, maxCap:8, slogans:SLOGANS
   });
   days=SCHED.days; FOCUS=focusIndex();
@@ -369,13 +374,16 @@ function dayHTML(d){
   const isToday=d.date===todayISO || (d.date===days[FOCUS].date && !days.some(x=>x.date===todayISO));
   const dd=new Date(d.date+"T00:00");
   const pill=dd.toLocaleDateString("en-US",{month:"short",day:"numeric"});
-  return `<div class="day ${isToday?'today':''}" id="${d.id}" data-date="${d.date}">
+  const doneMark=dayComplete(d)?`<span class="ddone">&#x2713; done</span>`:"";
+  const slogan=d.slogan?`<div class="dslogan">"${d.slogan}"</div>`:"";
+  return `<div class="day ${isToday?'today':''} ${dayComplete(d)?'daydone':''}" id="${d.id}" data-date="${d.date}">
     <div class="dhead">
       <span class="dpill">${pill}</span>
       <span class="ddow">${d.dow}</span>
       <span class="dest">~${d.est} min</span>
+      ${doneMark}
     </div>
-    <div class="dslogan">“${d.slogan}”</div>
+    ${slogan}
     <div class="tasks">${d.tasks.map(t=>taskHTML(t,d.dow)).join("")}</div>
   </div>`;
 }
@@ -394,7 +402,9 @@ function weekHTML(wnum, list){
 function renderPlan(){
   const byWeek={};
   days.forEach(d=>{ (byWeek[d.week]=byWeek[d.week]||[]).push(d); });
-  const html=Object.keys(byWeek).map(w=>weekHTML(w,byWeek[w])).join("")+`<div class="empty hidden" id="empty">No tasks match your filter.</div>`;
+  Object.values(byWeek).forEach(list=>list.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0));
+  const weeks=Object.keys(byWeek).sort((a,b)=>a-b);
+  const html=weeks.map(w=>weekHTML(w,byWeek[w])).join("")+`<div class="empty hidden" id="empty">No tasks match your filter.</div>`;
   document.getElementById("plan").innerHTML=html;
   updateWeekBars();
 }
@@ -422,7 +432,7 @@ function renderFocus(){
       <div class="date">${d.full} · ${d.dow}</div></div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--faint)">~${d.est} min${finishNote}</div>
     </div>
-    <div class="slogan">“${d.slogan}”</div>
+    <div class="slogan">"${d.slogan}"</div>
     <div class="ftasks tasks">${d.tasks.map(t=>taskHTML(t,d.dow)).join("")}</div>`;
 }
 
